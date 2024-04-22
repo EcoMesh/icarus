@@ -7,10 +7,12 @@ Install http://qgroundcontrol.com/downloads/
 
 Terminal 1:
 ```bash
-docker run -it -e DISPLAY=host.docker.internal:0 wnt3rmute/ardupilot-sitl ./sim_vehicle.py --out udp:host.docker.internal:14550 -L Ballarat --console --map -v ArduCopter -N
+docker run --rm -it -e DISPLAY=host.docker.internal:0 wnt3rmute/ardupilot-sitl ./sim_vehicle.py --out udp:host.docker.internal:14550 -l 30.455,-103.149,-999,0 --console --map -v ArduCopter -N
 ```
 
 TODO: Maybe modify https://github.com/Akademicki-Klub-Lotniczy/ardupilot-sitl-docker to work with our demo better.
+
+Install the poetry dependencies with `poetry install`. Then enter the shell with `poetry shell`.
 
 Terminal 2:
 ```bash
@@ -24,6 +26,11 @@ Run the dronekit script. For example, clone the dronekit-python repository and r
 python dronekit-python/examples/simple_goto/simple_goto.py --connect udp:127.0.0.1:14560
 
 python drone/drone_sitl_flight.py --connect udp:127.0.0.1:14560
+```
+
+Finally, start the webhook server:
+```bash
+uvicorn app:app --reload --port 4444
 ```
 
 ## Debugging
