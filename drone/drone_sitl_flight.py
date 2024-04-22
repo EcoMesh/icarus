@@ -155,8 +155,8 @@ def create_mission_from_path(path):
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 1, speed, 0, 0, 0, 0, 0))
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point[0], point[1], altitude))
 
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, path[-1][0], path[-1][1], altitude))
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    # cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, path[-1][0], path[-1][1], altitude))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, path[-1][0], path[-1][1], 0))
 
     
     print(" Upload new commands to vehicle")
@@ -184,7 +184,7 @@ def arm_and_takeoff(aTargetAltitude):
 
     while not vehicle.armed:      
         print(" Waiting for arming...")
-        time.sleep(1)
+        time.sleep(5)
 
     vehicle.send_mavlink(vehicle.message_factory.command_long_encode( 0, 0, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, speed, 0, 0, 0, 0, 0))
     vehicle.send_mavlink(vehicle.message_factory.command_long_encode( 0, 0, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 1, speed, 0, 0, 0, 0, 0))

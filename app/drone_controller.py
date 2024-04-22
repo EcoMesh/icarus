@@ -14,7 +14,7 @@ def run_drone(drone_path):
                 print(d)
 
                 print ('real copter up')
-                subprocess.run(["python", "drone/drone_sitl_flight.py", "--connect", "udp:127.0.0.1:14560", f.name])
+                subprocess.run(["python", "drone/drone_sitl_flight.py", "--connect", "udp:127.0.0.1:14551", f.name])
                 print ('real copter down')
     except Timeout:
         print("Another instance of the drone simulation is already running")
