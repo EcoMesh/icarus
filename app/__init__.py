@@ -3,13 +3,13 @@ from pydantic import BaseModel, Field
 from typing import List, Literal, Annotated, Union
 from app.database import get_database
 import rethinkdb.query as r
+import networkx as nx
 import subprocess
+import tempfile
 import threading
 import json
 
-def generate_drone_path(sensor_coordinates):
-    # TODO: implement this function
-    pass
+from app.pathfinder import generate_drone_path
 
 app = FastAPI()
 
@@ -32,8 +32,11 @@ class AlertRegionEvent(BaseModel):
 
 Alert = Annotated[Union[AlertSensorStateChange, AlertRegionEvent], Field(discriminator="reason")]
 
-def run_drone(path_file):
-    subprocess.run(["python", "drone/drone_sitl_flight.py", path_file])
+def run_drone(drone_path):
+    with tempfile.NamedTemporaryFile('w') as f:
+        f.write(json.dumps(drone_path))
+        subprocess.run(["python", "drone/drone_sitl_flight.py", f.path])
+
 
 @app.post("/webhook")
 async def webhook(body: Alert, conn = Depends(get_database)):
@@ -42,24 +45,25 @@ async def webhook(body: Alert, conn = Depends(get_database)):
         sensors = await (
             r.table('alarms_event_records')
             .get_all(body.alarm_event_id, index='alarm_event_id')
+            .distinct(index='node_id')
             .eq_join("node_id", r.table("sensors"), index="node_id")
             .run(conn)
         )
 
         sensor_coordinates = [
-            {
-                "longitude": sensor["right"]["location"]["coordinates"][1],
-                "latitude": sensor["right"]["location"]["coordinates"][0],
-            }
+            # {
+            #     "latitude": sensor["right"]["location"]["coordinates"][0],
+            #     "longitude": sensor["right"]["location"]["coordinates"][1],
+            # }
+            sensor["right"]["location"]["coordinates"]
             for sensor in sensors.items
         ]
 
+
         drone_path = generate_drone_path(sensor_coordinates)
         
-        with open('path.json', 'w') as f:
-            f.write(json.dumps(drone_path))
         
-        threading.Thread(target=run_drone, args=('path.json',)).start()
+        threading.Thread(target=run_drone, args=(drone_path)).start()
 
 
         return sensor_coordinates
