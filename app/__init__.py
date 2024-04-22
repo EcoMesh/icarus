@@ -3,13 +3,10 @@ from pydantic import BaseModel, Field
 from typing import List, Literal, Annotated, Union
 from app.database import get_database
 import rethinkdb.query as r
-import networkx as nx
-import subprocess
-import tempfile
 import threading
-import json
 
-from app.pathfinder import generate_drone_path
+from app.pathfinder import generate_drone_path_with_homebase
+from app.drone_controller import run_drone
 
 app = FastAPI()
 
@@ -32,11 +29,6 @@ class AlertRegionEvent(BaseModel):
 
 Alert = Annotated[Union[AlertSensorStateChange, AlertRegionEvent], Field(discriminator="reason")]
 
-def run_drone(drone_path):
-    with tempfile.NamedTemporaryFile('w') as f:
-        f.write(json.dumps(drone_path))
-        subprocess.run(["python", "drone/drone_sitl_flight.py", f.path])
-
 
 @app.post("/webhook")
 async def webhook(body: Alert, conn = Depends(get_database)):
@@ -45,26 +37,20 @@ async def webhook(body: Alert, conn = Depends(get_database)):
         sensors = await (
             r.table('alarms_event_records')
             .get_all(body.alarm_event_id, index='alarm_event_id')
-            .distinct(index='node_id')
+            .pluck('node_id')
+            .distinct()
             .eq_join("node_id", r.table("sensors"), index="node_id")
             .run(conn)
         )
 
         sensor_coordinates = [
-            # {
-            #     "latitude": sensor["right"]["location"]["coordinates"][0],
-            #     "longitude": sensor["right"]["location"]["coordinates"][1],
-            # }
-            sensor["right"]["location"]["coordinates"]
-            for sensor in sensors.items
+            tuple(reversed(sensor["right"]["location"]["coordinates"]))
+            for sensor in sensors
         ]
 
-
-        drone_path = generate_drone_path(sensor_coordinates)
+        drone_path = generate_drone_path_with_homebase(sensor_coordinates)
         
-        
-        threading.Thread(target=run_drone, args=(drone_path)).start()
+        threading.Thread(target=run_drone, args=(drone_path,)).start()
 
-
-        return sensor_coordinates
+        return drone_path
     return None

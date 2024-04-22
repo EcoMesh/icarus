@@ -13,30 +13,53 @@ from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGloba
 import time
 import math
 from pymavlink import mavutil
+import json
 
 
 #Set up option parsing to get connection string
 import argparse  
 parser = argparse.ArgumentParser(description='Demonstrates basic mission operations.')
+parser.add_argument('path', help="path to json file containing the path to fly", default=None)
 parser.add_argument('--connect', 
                    help="vehicle connection target string. If not specified, SITL automatically started and used.")
 args = parser.parse_args()
 
+
+if args.path:
+    path = json.load(open(args.path, 'r'))
+else:
+    path = [
+        (30.45333514055250, -103.14436912536623,),
+        (30.45333514055254, -103.14436912536625,),
+        (30.39064573955672, -103.18565368652345,),
+        (30.46454393219863, -103.20290565490724,),
+        (30.427990381032874, -103.21826934814455,),
+        (30.45333514055255, -103.14436912536621,),
+    ]
+
 connection_string = args.connect
 sitl = None
 
+speed = 15
+altitude = 500
 
-#Start SITL if no connection string specified
-if not connection_string:
-    import dronekit_sitl
-    sitl = dronekit_sitl.start_default()
-    connection_string = sitl.connection_string()
+def set_sim_speed(speed):
+    while True:
+        print(vehicle.parameters['SIM_SPEEDUP'])
+        vehicle.parameters['SIM_SPEEDUP'] = speed
+        print("Setting SIM_SPEEDUP")
+        if vehicle.parameters['SIM_SPEEDUP'] == speed:
+            break
+        time.sleep(0.1)
+
+    print(f"SIM_SPEEDUP set to {speed}")
 
 
 # Connect to the Vehicle
 print('Connecting to vehicle on: %s' % connection_string)
 vehicle = connect(connection_string, wait_ready=True)
 
+set_sim_speed(5)
 
 def get_location_metres(original_location, dNorth, dEast):
     """
@@ -101,42 +124,6 @@ def download_mission():
     cmds.wait_ready() # wait until download is complete.
 
 
-
-# def adds_square_mission(aLocation, aSize):
-#     """
-#     Adds a takeoff command and four waypoint commands to the current mission. 
-#     The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
-
-#     The function assumes vehicle.commands matches the vehicle mission state 
-#     (you must have called download at least once in the session and after clearing the mission)
-#     """	
-
-#     cmds = vehicle.commands
-
-#     print(" Clear any existing commands")
-#     cmds.clear() 
-    
-#     print(" Define/add new commands.")
-#     # Add new commands. The meaning/order of the parameters is documented in the Command class. 
-     
-#     #Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-#     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
-
-#     #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
-#     point1 = get_location_metres(aLocation, aSize, -aSize)
-#     point2 = get_location_metres(aLocation, aSize, aSize)
-#     point3 = get_location_metres(aLocation, -aSize, aSize)
-#     point4 = get_location_metres(aLocation, -aSize, -aSize)
-#     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point1.lat, point1.lon, 11))
-#     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point2.lat, point2.lon, 12))
-#     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point3.lat, point3.lon, 13))
-#     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point4.lat, point4.lon, 14))
-#     #add dummy waypoint "5" at point 4 (lets us know when have reached destination)
-#     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point4.lat, point4.lon, 14))    
-
-#     print(" Upload new commands to vehicle")
-#     cmds.upload()
-
 def create_mission_from_path(path):
     """
     Adds a takeoff command and four waypoint commands to the current mission. 
@@ -155,16 +142,27 @@ def create_mission_from_path(path):
     # Add new commands. The meaning/order of the parameters is documented in the Command class. 
      
     #Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 0, speed, 0, 0, 0, 0, 0))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 1, speed, 0, 0, 0, 0, 0))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 2, speed, 0, 0, 0, 0, 0))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 3, speed, 0, 0, 0, 0, 0))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
 
     #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
 
     for point in path:
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 0, speed, 0, 0, 0, 0, 0))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, 1, speed, 0, 0, 0, 0, 0))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point[0], point[1], altitude))
 
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point['latitude'], point['longitude'], 11))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, path[-1][0], path[-1][1], altitude))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
     
     print(" Upload new commands to vehicle")
     cmds.upload()
+
+    return len(cmds)
 
 
 def arm_and_takeoff(aTargetAltitude):
@@ -188,6 +186,14 @@ def arm_and_takeoff(aTargetAltitude):
         print(" Waiting for arming...")
         time.sleep(1)
 
+    vehicle.send_mavlink(vehicle.message_factory.command_long_encode( 0, 0, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0, speed, 0, 0, 0, 0, 0))
+    vehicle.send_mavlink(vehicle.message_factory.command_long_encode( 0, 0, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 1, speed, 0, 0, 0, 0, 0))
+    vehicle.send_mavlink(vehicle.message_factory.command_long_encode( 0, 0, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 2, speed, 0, 0, 0, 0, 0))
+    vehicle.send_mavlink(vehicle.message_factory.command_long_encode( 0, 0, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 3, speed, 0, 0, 0, 0, 0))
+    vehicle.flush()
+
+    set_sim_speed(50)
+
     print("Taking off!")
     vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude
 
@@ -200,49 +206,29 @@ def arm_and_takeoff(aTargetAltitude):
             break
         time.sleep(1)
 
-path = [{'latitude': -103.14436912536621, 'longitude': 30.45333514055255}, {'latitude': -103.14436912536621, 'longitude': 30.45333514055255}, {'latitude': -103.14436912536621, 'longitude': 30.45333514055255}, {'latitude': -103.14436912536621, 'longitude': 30.45333514055255}, {'latitude': -103.20290565490724, 'longitude': 30.46454393219863}, {'latitude': -103.20290565490724, 'longitude': 30.46454393219863}, {'latitude': -103.25878143310547, 'longitude': 30.401602635361105}, {'latitude': -103.25878143310547, 'longitude': 30.401602635361105}, {'latitude': -103.18565368652345, 'longitude': 30.39064573955672}, {'latitude': -103.18565368652345, 'longitude': 30.39064573955672}, {'latitude': -103.25466156005861, 'longitude': 30.44142207418663}, {'latitude': -103.21826934814455, 'longitude': 30.427990381032874}, {'latitude': -103.21826934814455, 'longitude': 30.427990381032874}, {'latitude': -103.21826934814455, 'longitude': 30.427990381032874}]
         
 print('Create a new mission (for current location)')
-# adds_square_mission(vehicle.location.global_frame,50)
-create_mission_from_path(path)
+final_waypoint_id = create_mission_from_path(path)
 
-
-# From Copter 3.3 you will be able to take off using a mission item. Plane must take off using a mission item (currently).
-arm_and_takeoff(10)
+arm_and_takeoff(altitude)
 
 print("Starting mission")
-# Reset mission set to first (0) waypoint
-vehicle.commands.next=0
+vehicle.commands.next = 0
 
 # Set mode to AUTO to start mission
 vehicle.mode = VehicleMode("AUTO")
-
-
-# Monitor mission. 
-# Demonstrates getting and setting the command number 
-# Uses distance_to_current_waypoint(), a convenience function for finding the 
-#   distance to the next waypoint.
 
 while True:
     nextwaypoint=vehicle.commands.next
     print('Distance to waypoint (%s): %s' % (nextwaypoint, distance_to_current_waypoint()))
   
-    if nextwaypoint==3: #Skip to next waypoint
-        print('Skipping to Waypoint 5 when reach waypoint 3')
-        vehicle.commands.next = 5
-    if nextwaypoint==5: #Dummy waypoint - as soon as we reach waypoint 4 this is true and we exit.
-        print("Exit 'standard' mission when start heading to final waypoint (5)")
+    if nextwaypoint == final_waypoint_id:
+        print("Exit")
         break
+
     time.sleep(1)
-
-print('Return to launch')
-vehicle.mode = VehicleMode("RTL")
-
 
 #Close vehicle object before exiting script
 print("Close vehicle object")
 vehicle.close()
 
-# Shut down simulator if it was started.
-if sitl is not None:
-    sitl.stop()
