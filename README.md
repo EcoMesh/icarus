@@ -5,8 +5,6 @@ The response mechanism.
 
 Install http://qgroundcontrol.com/downloads/
 
-
-
 Terminal 1:
 ```bash
 docker run -it -e DISPLAY=host.docker.internal:0 wnt3rmute/ardupilot-sitl ./sim_vehicle.py --out udp:host.docker.internal:14550 -L Ballarat --console --map -v ArduCopter -N
@@ -27,3 +25,10 @@ python dronekit-python/examples/simple_goto/simple_goto.py --connect udp:127.0.0
 
 python drone/drone_sitl_flight.py --connect udp:127.0.0.1:14560
 ```
+
+## Debugging
+
+When debugging the drone path, this website is useful to plot the points. Use the `app.pathfinder.debug_coordinates` function
+to print out the coordinates to the console and then copy and paste them into this [mapping website](https://mobisoftinfotech.com/tools/plot-multiple-points-on-map/).
+
+Check "Show Point Numbers" and then "Update Map" to see the numerical order of the points on the map.

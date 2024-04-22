@@ -2,8 +2,11 @@ import networkx as nx
 
 import geopy.distance
 
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+import matplotlib
+
 def generate_drone_path(sensor_coordinates):
-    # g = nx.DiGraph()
     g = nx.Graph()
 
     for sensor in sensor_coordinates:
@@ -11,10 +14,8 @@ def generate_drone_path(sensor_coordinates):
     
     for sensor1 in sensor_coordinates:
         for sensor2 in sensor_coordinates:
-            # g.add_edge(sensor1, sensor2, weight=geopy.distance.geodesic(sensor1, sensor2).km)
             g.add_edge(sensor2, sensor1, weight=geopy.distance.geodesic(sensor1, sensor2).km)
 
-    # return nx.tournament.hamiltonian_path(g)
     return nx.approximation.traveling_salesman_problem(g, weight='weight', cycle=True)
 
 
@@ -36,10 +37,16 @@ def generate_drone_path_with_homebase(sensors):
     path.pop(0)
     path.append(home)
 
-    for p in path:
-        print(f"{p[0]},{p[1]},#00FF00,marker,\"S\"")
-
     return path
+
+
+def debug_coordinates(coordinates, cmap='viridis'):
+    norm = Normalize(vmin=0, vmax=len(coordinates))
+    cmap = plt.get_cmap(cmap)
+    
+    for i, c in enumerate(coordinates):
+        color_hex = matplotlib.colors.to_hex(cmap(norm(i)))
+        print(f"{c[0]},{c[1]},{color_hex},marker,\"{i + 1}\"")
 
 
 if __name__ == '__main__':
@@ -67,7 +74,6 @@ if __name__ == '__main__':
 
     path = generate_drone_path_with_homebase(sensors)
 
-    for p in path:
-        print(f"{p[0]},{p[1]},#00FF00,marker,\"S\"")
+    debug_coordinates(path)
 
     run_drone(path)
