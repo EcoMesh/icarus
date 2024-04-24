@@ -59,8 +59,6 @@ def set_sim_speed(speed):
 print('Connecting to vehicle on: %s' % connection_string)
 vehicle = connect(connection_string, wait_ready=True)
 
-set_sim_speed(5)
-
 def get_location_metres(original_location, dNorth, dEast):
     """
     Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the 
@@ -176,7 +174,7 @@ def arm_and_takeoff(aTargetAltitude):
         print(" Waiting for vehicle to initialise...")
         time.sleep(1)
 
-        
+    set_sim_speed(1)    
     print("Arming motors")
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
@@ -208,6 +206,7 @@ def arm_and_takeoff(aTargetAltitude):
 
         
 print('Create a new mission (for current location)')
+set_sim_speed(5)
 final_waypoint_id = create_mission_from_path(path)
 
 arm_and_takeoff(altitude)
