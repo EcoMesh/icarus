@@ -5,8 +5,10 @@ from app.database import get_database
 import rethinkdb.query as r
 import threading
 
-from app.pathfinder import generate_drone_path_with_homebase
+from app.pathfinder import generate_drone_path_with_homebase, LAUNCH_SITE
 from app.drone_controller import run_drone
+
+
 
 app = FastAPI()
 
@@ -50,7 +52,7 @@ async def webhook(body: Alert, conn = Depends(get_database)):
 
         drone_path = generate_drone_path_with_homebase(sensor_coordinates)
         
-        threading.Thread(target=run_drone, args=(drone_path,)).start()
+        threading.Thread(target=run_drone, args=(drone_path, LAUNCH_SITE)).start()
 
         return drone_path
     return None

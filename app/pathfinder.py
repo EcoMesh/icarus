@@ -18,16 +18,16 @@ def generate_drone_path(sensor_coordinates):
 
     return nx.approximation.traveling_salesman_problem(g, weight='weight', cycle=True)
 
+# LAUNCH_SITE = (30.455, -103.149) # original
+LAUNCH_SITE = (30.396832281150534, -103.16871717297174) # Courand's
 
 def generate_drone_path_with_homebase(sensors):
-    home = (30.455, -103.149)
-
-    path = generate_drone_path([*sensors, home])
+    path = generate_drone_path([*sensors, LAUNCH_SITE])
     path.pop()
 
     max_iter = len(path)
     
-    while path[0] != home and max_iter > 0:
+    while path[0] != LAUNCH_SITE and max_iter > 0:
         path.append(path.pop(0))
         max_iter -= 1
 
@@ -35,7 +35,7 @@ def generate_drone_path_with_homebase(sensors):
         raise Exception('could not find homebase in path')
     
     path.pop(0)
-    path.append(home)
+    path.append(LAUNCH_SITE)
 
     return path
 
@@ -60,20 +60,24 @@ if __name__ == '__main__':
         # (30.427990381032874, -103.21826934814455),
         # (30.45333514055255, -103.14436912536621),
         # --
-        (30.44142207418663,-103.25466156005861),
-        (30.39064573955672,-103.18565368652345),
-        (30.401602635361105,-103.25878143310547),
-        (30.46454393219863,-103.20290565490724),
-        (30.45333514055255,-103.14436912536621),
-        (30.427990381032874,-103.21826934814455),
+        # (30.44142207418663,-103.25466156005861),
+        # (30.39064573955672,-103.18565368652345),
+        # (30.401602635361105,-103.25878143310547),
+        # (30.46454393219863,-103.20290565490724),
+        # (30.45333514055255,-103.14436912536621),
+        # (30.427990381032874,-103.21826934814455),
         # --
         # (30.45333514055255,-103.14436912536621),
         # (30.39064573955672,-103.18565368652345),
         # (30.455,-103.149),
+        # --
+        (30.398,-103.171),
+        (30.378,-103.1731),
+        (30.379,-103.1561),
     ]
 
     path = generate_drone_path_with_homebase(sensors)
 
     debug_coordinates(path)
 
-    run_drone(path)
+    run_drone(path, LAUNCH_SITE)

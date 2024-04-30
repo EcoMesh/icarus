@@ -227,6 +227,16 @@ while True:
 
     time.sleep(1)
 
+print("Returning to launch and landing")
+
+# wait till landed
+while True:
+    print(" Altitude: ", vehicle.location.global_relative_frame.alt)      
+    if vehicle.location.global_relative_frame.alt <= 0.1: #Trigger just below target alt.
+        print("Landed")
+        break
+    time.sleep(1)
+
 #Close vehicle object before exiting script
 print("Close vehicle object")
 vehicle.close()
